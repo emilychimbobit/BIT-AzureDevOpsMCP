@@ -109,8 +109,19 @@ export class AzureDevOpsClient {
     return response.data.value.map((p: { id: string; name: string }) => ({ id: p.id, name: p.name }));
   }
 
-  async getIterations(): Promise<Array<{ id: string; name: string; path: string }>> {
+  async getIterations(): Promise<Array<{ id: string; name: string; path: string; startDate?: string; finishDate?: string }>> {
     const response = await this.client.get(`/_apis/work/teamsettings/iterations?api-version=7.1`);
-    return response.data.value.map((i: { id: string; name: string; path: string }) => ({ id: i.id, name: i.name, path: i.path }));
+    return response.data.value.map((i: { id: string; name: string; path: string; attributes?: { startDate?: string; finishDate?: string } }) => ({
+      id: i.id, name: i.name, path: i.path,
+      startDate: i.attributes?.startDate, finishDate: i.attributes?.finishDate
+    }));
+  }
+
+  async updateIteration(iterationId: string, startDate: string, finishDate: string): Promise<{ id: string; name: string; startDate: string; finishDate: string }> {
+    const response = await this.client.patch(
+      `https://dev.azure.com/${this.organization}/_apis/wit/classificationnodes/iterations/${iterationId}?api-version=7.1`,
+      { attributes: { startDate, finishDate } }
+    );
+    return { id: response.data.id, name: response.data.name, startDate: response.data.attributes?.startDate, finishDate: response.data.attributes?.finishDate };
   }
 }

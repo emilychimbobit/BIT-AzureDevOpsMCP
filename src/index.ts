@@ -38,7 +38,8 @@ const tools: Tool[] = [
   { name: "get_work_item", description: "Obtiene detalles de un Work Item por ID", inputSchema: { type: "object", properties: { id: { type: "number" } }, required: ["id"] } },
   { name: "update_work_item", description: "Actualiza un Work Item existente", inputSchema: { type: "object", properties: { id: { type: "number" }, title: { type: "string" }, description: { type: "string" }, acceptanceCriteria: { type: "string" }, priority: { type: "number", enum: [1,2,3,4] }, storyPoints: { type: "number" }, assignedTo: { type: "string" }, tags: { type: "string" } }, required: ["id"] } },
   { name: "list_work_items", description: "Lista Work Items del proyecto", inputSchema: { type: "object", properties: { type: { type: "string", enum: ["Epic","User Story","Task","Feature","Bug"] }, top: { type: "number" } } } },
-  { name: "list_iterations", description: "Lista sprints/iteraciones", inputSchema: { type: "object", properties: {} } },
+  { name: "list_iterations", description: "Lista sprints/iteraciones con sus fechas de inicio y fin", inputSchema: { type: "object", properties: {} } },
+  { name: "update_iteration", description: "Actualiza las fechas de inicio y fin de un sprint/iteración", inputSchema: { type: "object", properties: { iterationId: { type: "string", description: "ID de la iteración (obtenido de list_iterations)" }, startDate: { type: "string", description: "Fecha de inicio en formato YYYY-MM-DD" }, finishDate: { type: "string", description: "Fecha de fin en formato YYYY-MM-DD" } }, required: ["iterationId", "startDate", "finishDate"] } },
   { name: "list_projects", description: "Lista proyectos de la organizacion", inputSchema: { type: "object", properties: {} } },
 ];
 
@@ -72,7 +73,12 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
     }
     if (name === "list_iterations") {
       const iterations = await azureClient.getIterations();
-      return { content: [{ type: "text", text: iterations.map(i => `${i.name}: ${i.path}`).join("\n") }] };
+      return { content: [{ type: "text", text: iterations.map(i => `ID: ${i.id} | ${i.name} | Inicio: ${i.startDate ?? "sin fecha"} | Fin: ${i.finishDate ?? "sin fecha"}`).join("\n") }] };
+    }
+    if (name === "update_iteration") {
+      const { iterationId, startDate, finishDate } = args as { iterationId: string; startDate: string; finishDate: string };
+      const result = await azureClient.updateIteration(iterationId, startDate, finishDate);
+      return { content: [{ type: "text", text: `✅ Iteración "${result.name}" actualizada:\n- Inicio: ${result.startDate}\n- Fin: ${result.finishDate}` }] };
     }
     if (name === "list_projects") {
       const projects = await azureClient.getProjects();
