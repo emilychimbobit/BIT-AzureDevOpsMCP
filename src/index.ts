@@ -46,7 +46,7 @@ const tools: Tool[] = [
   // ─── Sprints ──────────────────────────────────────────────────────────────
   { name: "list_iterations", description: "Lista sprints/iteraciones con sus fechas de inicio y fin", inputSchema: { type: "object", properties: {} } },
   { name: "create_iteration", description: "Crea un nuevo sprint/iteración", inputSchema: { type: "object", properties: { name: { type: "string" }, startDate: { type: "string", description: "Fecha inicio YYYY-MM-DD" }, finishDate: { type: "string", description: "Fecha fin YYYY-MM-DD" } }, required: ["name"] } },
-  { name: "update_iteration", description: "Actualiza las fechas de inicio y fin de un sprint/iteración", inputSchema: { type: "object", properties: { iterationId: { type: "string" }, startDate: { type: "string", description: "Fecha inicio YYYY-MM-DD" }, finishDate: { type: "string", description: "Fecha fin YYYY-MM-DD" } }, required: ["iterationId", "startDate", "finishDate"] } },
+  { name: "update_iteration", description: "Actualiza las fechas de inicio y fin de un sprint/iteración. Usa el campo 'path' que devuelve list_iterations (ej: \\AI-SQUAD\\Sprint 1)", inputSchema: { type: "object", properties: { iterationPath: { type: "string", description: "Path de la iteración devuelto por list_iterations, ej: \\AI-SQUAD\\Sprint 1" }, startDate: { type: "string", description: "Fecha inicio YYYY-MM-DD" }, finishDate: { type: "string", description: "Fecha fin YYYY-MM-DD" } }, required: ["iterationPath", "startDate", "finishDate"] } },
   { name: "get_sprint_work_items", description: "Lista los Work Items de un sprint específico", inputSchema: { type: "object", properties: { iterationId: { type: "string" } }, required: ["iterationId"] } },
   { name: "get_team_capacity", description: "Obtiene la capacidad del equipo para un sprint", inputSchema: { type: "object", properties: { iterationId: { type: "string" } }, required: ["iterationId"] } },
   // ─── Repos & PRs ──────────────────────────────────────────────────────────
@@ -117,7 +117,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
     // ─── Sprints ─────────────────────────────────────────────────────────────
     if (name === "list_iterations") {
       const iterations = await azureClient.getIterations();
-      return { content: [{ type: "text", text: iterations.map(i => `ID: ${i.id} | ${i.name} | Inicio: ${i.startDate ?? "sin fecha"} | Fin: ${i.finishDate ?? "sin fecha"}`).join("\n") }] };
+      return { content: [{ type: "text", text: iterations.map(i => `ID: ${i.id} | Path: ${i.path} | ${i.name} | Inicio: ${i.startDate ?? "sin fecha"} | Fin: ${i.finishDate ?? "sin fecha"}`).join("\n") }] };
     }
     if (name === "create_iteration") {
       const { name: iterName, startDate, finishDate } = args as { name: string; startDate?: string; finishDate?: string };
@@ -125,8 +125,8 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       return { content: [{ type: "text", text: `✅ Sprint "${iter.name}" creado.\n**ID:** ${iter.id}\n**Path:** ${iter.path}` }] };
     }
     if (name === "update_iteration") {
-      const { iterationId, startDate, finishDate } = args as { iterationId: string; startDate: string; finishDate: string };
-      const result = await azureClient.updateIteration(iterationId, startDate, finishDate);
+      const { iterationPath, startDate, finishDate } = args as { iterationPath: string; startDate: string; finishDate: string };
+      const result = await azureClient.updateIteration(iterationPath, startDate, finishDate);
       return { content: [{ type: "text", text: `✅ Sprint "${result.name}" actualizado:\n- Inicio: ${result.startDate}\n- Fin: ${result.finishDate}` }] };
     }
     if (name === "get_sprint_work_items") {

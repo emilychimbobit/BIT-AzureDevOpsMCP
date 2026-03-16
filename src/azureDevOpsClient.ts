@@ -152,9 +152,13 @@ export class AzureDevOpsClient {
     }));
   }
 
-  async updateIteration(iterationId: string, startDate: string, finishDate: string): Promise<{ id: string; name: string; startDate: string; finishDate: string }> {
+  async updateIteration(iterationPath: string, startDate: string, finishDate: string): Promise<{ id: string; name: string; startDate: string; finishDate: string }> {
+    // iterationPath comes from list_iterations, e.g. "\AI-SQUAD\Sprint 1"
+    // Strip leading backslash and first segment (project/team name), keep the rest
+    const segments = iterationPath.replace(/^\\/, "").split("\\");
+    const leafPath = segments.slice(1).map(encodeURIComponent).join("/");
     const response = await this.client.patch(
-      `https://dev.azure.com/${this.organization}/_apis/wit/classificationnodes/iterations/${iterationId}?api-version=7.1`,
+      `/_apis/wit/classificationnodes/iterations/${leafPath}?api-version=7.1`,
       { attributes: { startDate, finishDate } }
     );
     return { id: response.data.id, name: response.data.name, startDate: response.data.attributes?.startDate, finishDate: response.data.attributes?.finishDate };
