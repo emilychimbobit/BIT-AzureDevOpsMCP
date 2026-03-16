@@ -153,12 +153,12 @@ export class AzureDevOpsClient {
   }
 
   async updateIteration(iterationPath: string, startDate: string, finishDate: string): Promise<{ id: string; name: string; startDate: string; finishDate: string }> {
-    // iterationPath comes from list_iterations, e.g. "\AI-SQUAD\Sprint 1"
-    // Strip leading backslash and first segment (project/team name), keep the rest
+    // iterationPath from list_iterations: "\AI-SQUAD\Iteration\Sprint 1"
+    // API expects just the leaf name: "Sprint 1"
     const segments = iterationPath.replace(/^\\/, "").split("\\");
-    const leafPath = segments.slice(1).map(encodeURIComponent).join("/");
+    const leafName = encodeURIComponent(segments[segments.length - 1]);
     const response = await this.client.patch(
-      `/_apis/wit/classificationnodes/iterations/${leafPath}?api-version=7.1`,
+      `/_apis/wit/classificationnodes/iterations/${leafName}?api-version=7.1`,
       { attributes: { startDate, finishDate } }
     );
     return { id: response.data.id, name: response.data.name, startDate: response.data.attributes?.startDate, finishDate: response.data.attributes?.finishDate };
